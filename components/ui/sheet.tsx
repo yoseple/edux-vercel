@@ -1,76 +1,101 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import * as SheetPrimitive from '@radix-ui/react-dialog'
+import * as React from 'react';
+import * as SheetPrimitive from '@radix-ui/react-dialog';
 
-import { cn } from '@/lib/utils'
-import { IconClose } from '@/components/ui/icons'
+import { cn } from '@/lib/utils';
+import { IconClose } from '@/components/ui/icons';
 
-const Sheet = SheetPrimitive.Root
+const Sheet = SheetPrimitive.Root;
 
-const SheetTrigger = SheetPrimitive.Trigger
+const SheetTrigger = SheetPrimitive.Trigger;
 
-const SheetClose = SheetPrimitive.Close
+const SheetClose = SheetPrimitive.Close;
 
 const SheetPortal = ({
   className,
   children,
   ...props
-}: SheetPrimitive.DialogPortalProps) => (
-  <SheetPrimitive.Portal
-    className={cn('fixed inset-0 z-50 flex', className)}
-    {...props}
-  >
-    {children}
+}: SheetPrimitive.DialogPortalProps & { className?: string }) => (
+  <SheetPrimitive.Portal {...props}>
+    <div className={cn('fixed inset-0 z-50 flex', className)}>
+      {children}
+    </div>
   </SheetPrimitive.Portal>
-)
-SheetPortal.displayName = SheetPrimitive.Portal.displayName
+);
+SheetPortal.displayName = SheetPrimitive.Portal.displayName;
 
 const SheetOverlay = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay> & {
+    closeOnClick?: boolean; // Custom prop for closing on overlay click
+    onClickOverlay?: () => void; // Custom callback when overlay is clicked
+    onClose?: () => void; // Custom onClose handler
+  }
+>(({ className, closeOnClick = true, onClickOverlay, onClose, ...props }, ref) => (
   <SheetPrimitive.Overlay
+    ref={ref}
     className={cn(
       'fixed inset-0 z-50 transition-all duration-100 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=open]:fade-in',
       className
     )}
+    onClick={(event) => {
+      if (closeOnClick) {
+        onClose?.(); // Trigger onClose handler if closeOnClick is true
+      }
+      onClickOverlay?.(); // Trigger additional behavior on overlay click
+    }}
     {...props}
-    ref={ref}
   />
-))
-SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
+));
+SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <SheetPortal>
-    <SheetPrimitive.Content
-      ref={ref}
-      className={cn(
-        'fixed z-50 h-full border-r bg-background p-6 opacity-100 shadow-lg data-[state=closed]:animate-slide-to-left data-[state=open]:animate-slide-from-left',
-        className
-      )}
-      {...props}
-    >
-      {children}
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-        <IconClose />
-        <span className="sr-only">Close</span>
-      </SheetPrimitive.Close>
-    </SheetPrimitive.Content>
-  </SheetPortal>
-))
-SheetContent.displayName = SheetPrimitive.Content.displayName
+  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> & {
+    animationDirection?: 'left' | 'right' | 'top' | 'bottom';
+  }
+>(({ className, children, animationDirection = 'left', ...props }, ref) => {
+  const animationClass = {
+    left: 'data-[state=closed]:animate-slide-to-left data-[state=open]:animate-slide-from-left',
+    right: 'data-[state=closed]:animate-slide-to-right data-[state=open]:animate-slide-from-right',
+    top: 'data-[state=closed]:animate-slide-to-top data-[state=open]:animate-slide-from-top',
+    bottom: 'data-[state=closed]:animate-slide-to-bottom data-[state=open]:animate-slide-from-bottom',
+  }[animationDirection];
+
+  return (
+    <SheetPortal>
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(
+          'fixed z-50 h-full border-r bg-background p-6 opacity-100 shadow-lg',
+          animationClass,
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+          <IconClose />
+          <span className="sr-only">Close</span>
+        </SheetPrimitive.Close>
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  );
+});
+SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 const SheetHeader = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('flex flex-col space-y-2', className)} {...props} />
-)
-SheetHeader.displayName = 'SheetHeader'
+  <div
+    role="heading"
+    className={cn('flex flex-col space-y-2', className)}
+    {...props}
+  />
+);
+SheetHeader.displayName = 'SheetHeader';
 
 const SheetFooter = ({
   className,
@@ -83,8 +108,8 @@ const SheetFooter = ({
     )}
     {...props}
   />
-)
-SheetFooter.displayName = 'SheetFooter'
+);
+SheetFooter.displayName = 'SheetFooter';
 
 const SheetTitle = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Title>,
@@ -95,8 +120,8 @@ const SheetTitle = React.forwardRef<
     className={cn('text-lg font-semibold text-foreground', className)}
     {...props}
   />
-))
-SheetTitle.displayName = SheetPrimitive.Title.displayName
+));
+SheetTitle.displayName = SheetPrimitive.Title.displayName;
 
 const SheetDescription = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Description>,
@@ -107,8 +132,8 @@ const SheetDescription = React.forwardRef<
     className={cn('text-sm text-muted-foreground', className)}
     {...props}
   />
-))
-SheetDescription.displayName = SheetPrimitive.Description.displayName
+));
+SheetDescription.displayName = SheetPrimitive.Description.displayName;
 
 export {
   Sheet,
@@ -118,5 +143,5 @@ export {
   SheetHeader,
   SheetFooter,
   SheetTitle,
-  SheetDescription
-}
+  SheetDescription,
+};
