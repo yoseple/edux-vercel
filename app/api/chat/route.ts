@@ -18,7 +18,7 @@ const openai = new OpenAIApi(configuration);
 export async function POST(req: Request) {
   try {
     // Pass the promise directly without awaiting cookies()
-    const cookieStorePromise = cookies();
+    const cookieStorePromise = await cookies();
     const supabase = createRouteHandlerClient<Database>({
       cookies: () => cookieStorePromise,
     });
@@ -51,37 +51,39 @@ export async function POST(req: Request) {
     // Stream the response back to the client
     const stream = OpenAIStream(res, {
       async onCompletion(completion) {
-        try {
-          const title = json.messages[0]?.content?.substring(0, 100) ?? 'Untitled';
-          const id = json.id ?? nanoid();
-          const createdAt = Date.now();
-          const path = `/chat/${id}`;
-          const payload = {
-            id, // Ensure id is valid in the schema
-            title,
-            userId,
-            createdAt,
-            path,
-            messages: [
-              ...messages,
-              {
-                content: completion,
-                role: 'assistant',
-              },
-            ],
-          };
+          try {
+              // Construct the payload for upsert
+              const payload = {
+                  id: json.id || nanoid(), // Use existing ID or generate a new one
+                  title: json.messages[0]?.content?.substring(0, 100) || 'Untitled', // Default title
+                  userId: userId || 'anonymous', // Use userId or fallback to 'anonymous'
+                  createdAt: Date.now(), // Current timestamp
+                  path: `/chat/${json.id || nanoid()}`, // Path for the chat
+                  messages: [
+                      ...messages, // Existing messages
+                      { content: completion, role: 'assistant' }, // Add new completion message
+                  ],
+              };
 
-          // Insert chat into the database
-          const { error } = await supabase.from('chats').upsert(payload);
+              console.log('Upserting payload:', payload);
 
-          if (error) {
-            console.error('Database upsert error:', error);
+              // Perform the upsert into the 'chats' table
+              const { data, error } = await supabase.from('chats').upsert(payload);
+
+              if (error) {
+                  // Log detailed error message and details if upsert fails
+                  console.error('Supabase upsert error:', error.message, error.details);
+              } else {
+                  console.log('Database upsert successful:', data);
+              }
+          } catch (err) {
+              // Catch and log unexpected errors during the upsert process
+              console.error('Error during upsert:', err);
           }
-        } catch (dbError) {
-          console.error('Error during chat upsert:', dbError);
-        }
       },
     });
+
+  
 
     return new StreamingTextResponse(stream);
   } catch (error) {

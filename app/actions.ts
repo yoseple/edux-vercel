@@ -10,38 +10,53 @@ import { type Chat } from '@/lib/types'
 
 export async function getChats(userId?: string | null) {
   if (!userId) {
-    return []
+    return [];
   }
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies();
     const supabase = createServerActionClient<Database>({
-      cookies: () => cookieStore
-    })
-    const { data } = await supabase
-      .from('chats')
-      .select('payload')
-      .order('payload->createdAt', { ascending: false })
-      .eq('user_id', userId)
-      .throwOnError()
+      cookies: () => cookieStore,
+    });
 
-    return (data?.map(entry => entry.payload) as Chat[]) ?? []
+    const { data, error } = await supabase
+      .from('chats')
+      .select('id, title, createdAt, path, messages') // Select specific columns
+      .eq('userId', userId) // Match chats for the given user
+      .order('createdAt', { ascending: false }); // Sort by creation date
+
+    if (error) {
+      console.error('Supabase error:', JSON.stringify(error, null, 2));
+      return [];
+    }
+
+    return data ?? [];
   } catch (error) {
-    return []
+    console.error('Error fetching chats:', JSON.stringify(error, null, 2));
+    return [];
   }
 }
 
-export async function getChat(id: string) {
+
+
+export async function getChat(id: string, userId: string) {
   const cookieStore = cookies()
   const supabase = createServerActionClient<Database>({
     cookies: () => cookieStore
   })
-  const { data } = await supabase
-    .from('chats')
-    .select('payload')
-    .eq('id', id)
-    .maybeSingle()
 
-  return (data?.payload as Chat) ?? null
+  const { data, error } = await supabase
+    .from('chats')
+    .select('*')
+    .eq('id', id)
+    .eq('userId', userId) // Ensure the chat belongs to the logged-in user
+    .single();
+
+  if (error) {
+    console.error('Error fetching chat:', error.message);
+    return null;
+  }
+
+  return data;
 }
 
 export async function removeChat({ id, path }: { id: string; path: string }) {

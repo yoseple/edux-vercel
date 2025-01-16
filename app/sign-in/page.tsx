@@ -13,7 +13,7 @@ export const metadata = {
 };
 
 export default async function SignInPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const session = await auth({ cookieStore });
 
   // Redirect to home if the user is already logged in

@@ -1,53 +1,54 @@
-import { type Metadata } from 'next'
-import { notFound, redirect } from 'next/navigation'
+import { type Metadata } from 'next';
+import { notFound, redirect } from 'next/navigation';
 
-import { auth } from '@/auth'
-import { getChat } from '@/app/actions'
-import { Chat } from '@/components/chat'
-import { cookies } from 'next/headers'
+import { auth } from '@/auth';
+import { getChat } from '@/app/actions';
+import { Chat } from '@/components/chat';
+import { cookies } from 'next/headers';
 
-export const runtime = 'edge'
-export const preferredRegion = 'home'
+export const runtime = 'edge';
+export const preferredRegion = 'home';
 
 export interface ChatPageProps {
   params: {
-    id: string
-  }
+    id: string;
+  };
 }
 
+// Dynamic metadata for the chat page
 export async function generateMetadata({
-  params
+  params,
 }: ChatPageProps): Promise<Metadata> {
-  const cookieStore = cookies()
-  const session = await auth({ cookieStore })
+  const {id} = params;
+  const cookieStore = cookies();
+  const session = await auth({ cookieStore });
 
   if (!session?.user) {
-    return {}
+    return {};
   }
 
-  const chat = await getChat(params.id)
+  const chat = await getChat(id, session.user.id); // Pass userId here
   return {
-    title: chat?.title.toString().slice(0, 50) ?? 'Chat'
-  }
+    title: chat?.title.toString().slice(0, 50) ?? 'Chat',
+  };
 }
 
 export default async function ChatPage({ params }: ChatPageProps) {
-  const cookieStore = cookies()
-  const session = await auth({ cookieStore })
+  const cookieStore = cookies();
+  const session = await auth({ cookieStore });
 
+  // Redirect to sign-in page if not authenticated
   if (!session?.user) {
-    redirect(`/sign-in?next=/chat/${params.id}`)
+    redirect(`/sign-in?next=/chat/${params.id}`);
   }
 
-  const chat = await getChat(params.id)
+  // Fetch the chat data for the logged-in user
+  const chat = await getChat(params.id, session.user.id);
 
+  // Show 404 page if the chat is not found or doesn't belong to the user
   if (!chat) {
-    notFound()
+    notFound();
   }
 
-  if (chat?.userId !== session?.user?.id) {
-    notFound()
-  }
-
-  return <Chat id={chat.id} initialMessages={chat.messages} />
+  return <Chat id={chat.id} initialMessages={chat.messages} />;
 }
