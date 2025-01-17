@@ -19,7 +19,8 @@ export interface ChatPageProps {
 export async function generateMetadata({
   params,
 }: ChatPageProps): Promise<Metadata> {
-  const {id} = params;
+
+  const {id} =  params;
   const cookieStore = cookies();
   const session = await auth({ cookieStore });
 
@@ -34,16 +35,17 @@ export async function generateMetadata({
 }
 
 export default async function ChatPage({ params }: ChatPageProps) {
+  const {id} = params
   const cookieStore = cookies();
   const session = await auth({ cookieStore });
 
   // Redirect to sign-in page if not authenticated
   if (!session?.user) {
-    redirect(`/sign-in?next=/chat/${params.id}`);
+    redirect(`/sign-in?next=/chat/${id}`);
   }
 
   // Fetch the chat data for the logged-in user
-  const chat = await getChat(params.id, session.user.id);
+  const chat = await getChat(id, session.user.id);
 
   // Show 404 page if the chat is not found or doesn't belong to the user
   if (!chat) {

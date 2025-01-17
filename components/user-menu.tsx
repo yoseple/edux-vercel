@@ -69,7 +69,7 @@ export function UserMenu({ user }: UserMenuProps) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <a
+            {/* <a
               href="https://vercel.com"
               target="_blank"
               rel="noopener noreferrer"
@@ -77,7 +77,7 @@ export function UserMenu({ user }: UserMenuProps) {
             >
               Vercel Homepage
               <IconExternalLink className="ml-auto h-3 w-3" />
-            </a>
+            </a> */}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={signOut} className="text-xs">
             Log Out
